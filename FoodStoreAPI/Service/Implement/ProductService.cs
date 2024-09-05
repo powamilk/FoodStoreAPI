@@ -13,10 +13,10 @@ namespace FoodStoreAPI.Service.Implement
             _context = context;
         }
 
-        public async Task<IEnumerable<ProductVM>> GetProductsByCategoryAsync(int categoryId)
+        // 1.1. Lấy tất cả sản phẩm
+        public async Task<IEnumerable<ProductVM>> GetAllProductsAsync()
         {
             return await _context.Products
-                .Where(p => p.CategoryId == categoryId)
                 .Select(p => new ProductVM
                 {
                     Id = p.Id,
@@ -28,46 +28,76 @@ namespace FoodStoreAPI.Service.Implement
                 }).ToListAsync();
         }
 
-        public async Task<ProductVM> CreateProductAsync(ProductVM product)
+        // 1.2. Lấy thông tin chi tiết của một sản phẩm
+        public async Task<ProductVM?> GetProductByIdAsync(int id)
         {
-            var newProduct = new Product
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
             {
+                return null;
+            }
+
+            return new ProductVM
+            {
+                Id = product.Id,
                 Name = product.Name,
                 CategoryId = product.CategoryId,
                 Price = product.Price,
                 Description = product.Description,
                 Stock = product.Stock
             };
+        }
+
+        // 1.3. Tạo sản phẩm mới
+        public async Task<ProductVM> CreateProductAsync(ProductVM productVM)
+        {
+            var newProduct = new Product
+            {
+                Name = productVM.Name,
+                CategoryId = productVM.CategoryId,
+                Price = productVM.Price,
+                Description = productVM.Description,
+                Stock = productVM.Stock
+            };
 
             _context.Products.Add(newProduct);
             await _context.SaveChangesAsync();
 
-            product.Id = newProduct.Id;
-            return product;
+            productVM.Id = newProduct.Id;
+            return productVM;
         }
 
-        public async Task UpdateProductAsync(int id, ProductVM product)
+        // 1.4. Cập nhật thông tin sản phẩm
+        public async Task UpdateProductAsync(int id, ProductVM productVM)
         {
             var existingProduct = await _context.Products.FindAsync(id);
-            if (existingProduct == null) throw new KeyNotFoundException("Product not found");
+            if (existingProduct == null)
+            {
+                throw new KeyNotFoundException("Product not found");
+            }
 
-            existingProduct.Name = product.Name;
-            existingProduct.CategoryId = product.CategoryId;
-            existingProduct.Price = product.Price;
-            existingProduct.Description = product.Description;
-            existingProduct.Stock = product.Stock;
+            existingProduct.Name = productVM.Name;
+            existingProduct.CategoryId = productVM.CategoryId;
+            existingProduct.Price = productVM.Price;
+            existingProduct.Description = productVM.Description;
+            existingProduct.Stock = productVM.Stock;
 
             await _context.SaveChangesAsync();
         }
 
+        // 1.5. Xóa sản phẩm theo ID
         public async Task DeleteProductAsync(int id)
         {
             var product = await _context.Products.FindAsync(id);
-            if (product == null) throw new KeyNotFoundException("Product not found");
+            if (product == null)
+            {
+                throw new KeyNotFoundException("Product not found");
+            }
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
         }
     }
+
 
 }

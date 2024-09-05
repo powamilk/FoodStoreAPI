@@ -13,6 +13,55 @@ namespace FoodStoreAPI.Service.Implement
             _context = context;
         }
 
+        public async Task<IEnumerable<OrderVM>> GetAllOrdersAsync()
+        {
+            return await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .Select(o => new OrderVM
+                {
+                    Id = o.Id,
+                    CustomerId = o.CustomerId,
+                    OrderDate = o.OrderDate,
+                    TotalAmount = o.TotalAmount,
+                    OrderItems = o.OrderItems.Select(oi => new OrderItemVM
+                    {
+                        ProductId = oi.ProductId,
+                        Quantity = oi.Quantity,
+                        ProductName = oi.Product.Name,
+                        ProductPrice = oi.Product.Price 
+                    }).ToList()
+                })
+                .ToListAsync();
+        }
+
+        public async Task<OrderVM?> GetOrderByIdAsync(int id)
+        {
+            var order = await _context.Orders
+                                      .Include(o => o.OrderItems)
+                                      .ThenInclude(oi => oi.Product)
+                                      .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            return new OrderVM
+            {
+                Id = order.Id,
+                CustomerId = order.CustomerId,
+                OrderDate = order.OrderDate,
+                TotalAmount = order.TotalAmount,
+                OrderItems = order.OrderItems.Select(oi => new OrderItemVM
+                {
+                    ProductId = oi.ProductId,
+                    Quantity = oi.Quantity,
+                    ProductName = oi.Product.Name,
+                    ProductPrice = oi.Product.Price
+                }).ToList()
+            };
+        }
         public async Task<OrderVM> CreateOrderAsync(OrderVM order)
         {
             var newOrder = new Order
@@ -38,34 +87,42 @@ namespace FoodStoreAPI.Service.Implement
             return order;
         }
 
-        public async Task<OrderVM?> GetOrderByIdAsync(int id)
+        public async Task UpdateOrderAsync(int id, OrderVM order)
         {
-            var order = await _context.Orders.Include(o => o.OrderItems)
-                                             .FirstOrDefaultAsync(o => o.Id == id);
-            if (order == null) return null;
+            var existingOrder = await _context.Orders.Include(o => o.OrderItems)
+                                                     .FirstOrDefaultAsync(o => o.Id == id);
 
-            return new OrderVM
+            if (existingOrder == null)
             {
-                Id = order.Id,
-                CustomerId = order.CustomerId,
-                OrderDate = order.OrderDate,
-                TotalAmount = order.TotalAmount,
-                OrderItems = order.OrderItems.Select(i => new OrderItemVM
+                throw new KeyNotFoundException("Order not found");
+            }
+
+            existingOrder.CustomerId = order.CustomerId;
+            existingOrder.OrderDate = order.OrderDate;
+            existingOrder.TotalAmount = order.TotalAmount;
+            existingOrder.OrderItems.Clear();
+            foreach (var item in order.OrderItems)
+            {
+                existingOrder.OrderItems.Add(new OrderItem
                 {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity
-                }).ToList()
-            };
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity
+                });
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteOrderAsync(int id)
         {
             var order = await _context.Orders.FindAsync(id);
-            if (order == null) throw new KeyNotFoundException("Order not found");
+            if (order == null)
+            {
+                throw new KeyNotFoundException("Order not found");
+            }
 
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
         }
     }
-
 }

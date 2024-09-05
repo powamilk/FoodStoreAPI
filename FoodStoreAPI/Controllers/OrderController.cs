@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FoodStoreAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/orders")]
     [ApiController]
     public class OrderController : ControllerBase
     {
@@ -16,6 +16,24 @@ namespace FoodStoreAPI.Controllers
             _orderService = orderService;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllOrders()
+        {
+            var orders = await _orderService.GetAllOrdersAsync();
+            return Ok(orders);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetOrderById(int id)
+        {
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+            return Ok(order);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] OrderVM order)
         {
@@ -23,12 +41,11 @@ namespace FoodStoreAPI.Controllers
             return CreatedAtAction(nameof(GetOrderById), new { id = createdOrder.Id }, createdOrder);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrderById(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderVM order)
         {
-            var order = await _orderService.GetOrderByIdAsync(id);
-            if (order == null) return NotFound();
-            return Ok(order);
+            await _orderService.UpdateOrderAsync(id, order);
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
@@ -38,5 +55,6 @@ namespace FoodStoreAPI.Controllers
             return NoContent();
         }
     }
+
 
 }
