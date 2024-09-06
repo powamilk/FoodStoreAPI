@@ -13,7 +13,6 @@ namespace FoodStoreAPI.Service.Implement
             _context = context;
         }
 
-        // 1.1. Lấy tất cả sản phẩm
         public async Task<IEnumerable<ProductVM>> GetAllProductsAsync()
         {
             return await _context.Products
@@ -28,7 +27,6 @@ namespace FoodStoreAPI.Service.Implement
                 }).ToListAsync();
         }
 
-        // 1.2. Lấy thông tin chi tiết của một sản phẩm
         public async Task<ProductVM?> GetProductByIdAsync(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -48,7 +46,6 @@ namespace FoodStoreAPI.Service.Implement
             };
         }
 
-        // 1.3. Tạo sản phẩm mới
         public async Task<ProductVM> CreateProductAsync(ProductVM productVM)
         {
             var newProduct = new Product
@@ -67,7 +64,6 @@ namespace FoodStoreAPI.Service.Implement
             return productVM;
         }
 
-        // 1.4. Cập nhật thông tin sản phẩm
         public async Task UpdateProductAsync(int id, ProductVM productVM)
         {
             var existingProduct = await _context.Products.FindAsync(id);
@@ -85,7 +81,7 @@ namespace FoodStoreAPI.Service.Implement
             await _context.SaveChangesAsync();
         }
 
-        // 1.5. Xóa sản phẩm theo ID
+
         public async Task DeleteProductAsync(int id)
         {
             var product = await _context.Products.FindAsync(id);
