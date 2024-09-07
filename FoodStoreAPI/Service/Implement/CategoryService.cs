@@ -1,4 +1,5 @@
-﻿using FoodStoreAPI.Entities;
+﻿using AutoMapper;
+using FoodStoreAPI.Entities;
 using FoodStoreAPI.Service.Interface;
 using FoodStoreAPI.ViewModel;
 using Microsoft.EntityFrameworkCore;
@@ -8,21 +9,18 @@ namespace FoodStoreAPI.Service.Implement
     public class CategoryService : ICategoryService
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public CategoryService(AppDbContext context)
+        public CategoryService(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<CategoryVM>> GetAllCategoriesAsync()
         {
-            return await _context.Categories
-                .Select(c => new CategoryVM
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Description = c.Description
-                }).ToListAsync();
+            var categories = await _context.Categories.ToListAsync();
+            return _mapper.Map<IEnumerable<CategoryVM>>(categories);
         }
 
         public async Task<CategoryVM?> GetCategoryByIdAsync(int id)
@@ -30,37 +28,25 @@ namespace FoodStoreAPI.Service.Implement
             var category = await _context.Categories.FindAsync(id);
             if (category == null) return null;
 
-            return new CategoryVM
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description
-            };
+            return _mapper.Map<CategoryVM>(category);
         }
 
-        public async Task<CategoryVM> CreateCategoryAsync(CategoryVM category)
+        public async Task<CategoryVM> CreateCategoryAsync(CategoryVM categoryVM)
         {
-            var newCategory = new Category
-            {
-                Name = category.Name,
-                Description = category.Description
-            };
+            var newCategory = _mapper.Map<Category>(categoryVM);
 
             _context.Categories.Add(newCategory);
             await _context.SaveChangesAsync();
 
-            category.Id = newCategory.Id;
-            return category;
+            return _mapper.Map<CategoryVM>(newCategory);
         }
 
-        public async Task UpdateCategoryAsync(int id, CategoryVM category)
+        public async Task UpdateCategoryAsync(int id, CategoryVM categoryVM)
         {
             var existingCategory = await _context.Categories.FindAsync(id);
             if (existingCategory == null) throw new KeyNotFoundException("Category not found");
 
-            existingCategory.Name = category.Name;
-            existingCategory.Description = category.Description;
-
+            _mapper.Map(categoryVM, existingCategory);
             await _context.SaveChangesAsync();
         }
 

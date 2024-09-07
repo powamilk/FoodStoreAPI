@@ -1,38 +1,30 @@
-﻿using FoodStoreAPI.Entities;
+﻿using AutoMapper;
+using FoodStoreAPI.Entities;
 using FoodStoreAPI.Service.Interface;
 using FoodStoreAPI.ViewModel;
 using Microsoft.EntityFrameworkCore;
+
 namespace FoodStoreAPI.Service.Implement
 {
     public class OrderService : IOrderService
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public OrderService(AppDbContext context)
+        public OrderService(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<OrderVM>> GetAllOrdersAsync()
         {
-            return await _context.Orders
+            var orders = await _context.Orders
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
-                .Select(o => new OrderVM
-                {
-                    Id = o.Id,
-                    CustomerId = o.CustomerId,
-                    OrderDate = o.OrderDate,
-                    TotalAmount = o.TotalAmount,
-                    OrderItems = o.OrderItems.Select(oi => new OrderItemVM
-                    {
-                        ProductId = oi.ProductId,
-                        Quantity = oi.Quantity,
-                        ProductName = oi.Product.Name,
-                        ProductPrice = oi.Product.Price 
-                    }).ToList()
-                })
                 .ToListAsync();
+
+            return _mapper.Map<IEnumerable<OrderVM>>(orders);
         }
 
         public async Task<OrderVM?> GetOrderByIdAsync(int id)
@@ -42,84 +34,37 @@ namespace FoodStoreAPI.Service.Implement
                                       .ThenInclude(oi => oi.Product)
                                       .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null)
-            {
-                return null;
-            }
+            if (order == null) return null;
 
-            return new OrderVM
-            {
-                Id = order.Id,
-                CustomerId = order.CustomerId,
-                OrderDate = order.OrderDate,
-                TotalAmount = order.TotalAmount,
-                OrderItems = order.OrderItems.Select(oi => new OrderItemVM
-                {
-                    ProductId = oi.ProductId,
-                    Quantity = oi.Quantity,
-                    ProductName = oi.Product.Name,
-                    ProductPrice = oi.Product.Price
-                }).ToList()
-            };
+            return _mapper.Map<OrderVM>(order);
         }
-        public async Task<OrderVM> CreateOrderAsync(OrderVM order)
-        {
-            var newOrder = new Order
-            {
-                CustomerId = order.CustomerId,
-                OrderDate = DateTime.Now,
-                TotalAmount = order.TotalAmount
-            };
 
-            foreach (var item in order.OrderItems)
-            {
-                newOrder.OrderItems.Add(new OrderItem
-                {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                });
-            }
+        public async Task<OrderVM> CreateOrderAsync(OrderVM orderVM)
+        {
+            var newOrder = _mapper.Map<Order>(orderVM);
 
             _context.Orders.Add(newOrder);
             await _context.SaveChangesAsync();
 
-            order.Id = newOrder.Id;
-            return order;
+            return _mapper.Map<OrderVM>(newOrder);
         }
 
-        public async Task UpdateOrderAsync(int id, OrderVM order)
+        public async Task UpdateOrderAsync(int id, OrderVM orderVM)
         {
-            var existingOrder = await _context.Orders.Include(o => o.OrderItems)
-                                                     .FirstOrDefaultAsync(o => o.Id == id);
+            var existingOrder = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (existingOrder == null)
-            {
-                throw new KeyNotFoundException("Order not found");
-            }
+            if (existingOrder == null) throw new KeyNotFoundException("Order not found");
 
-            existingOrder.CustomerId = order.CustomerId;
-            existingOrder.OrderDate = order.OrderDate;
-            existingOrder.TotalAmount = order.TotalAmount;
-            existingOrder.OrderItems.Clear();
-            foreach (var item in order.OrderItems)
-            {
-                existingOrder.OrderItems.Add(new OrderItem
-                {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity
-                });
-            }
-
+            _mapper.Map(orderVM, existingOrder);
             await _context.SaveChangesAsync();
         }
 
         public async Task DeleteOrderAsync(int id)
         {
             var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-            {
-                throw new KeyNotFoundException("Order not found");
-            }
+            if (order == null) throw new KeyNotFoundException("Order not found");
 
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
