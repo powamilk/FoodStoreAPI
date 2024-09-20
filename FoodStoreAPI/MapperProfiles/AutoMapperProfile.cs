@@ -9,6 +9,7 @@ namespace FoodStoreAPI.MapperProfiles
         public AutoMapperProfile()
         {
             CreateMap<Category, CategoryVM>().ReverseMap();
+            CreateMap<Order, UpdateOrderVM>().ReverseMap();
 
             CreateMap<Product, ProductVM>()
                 .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.Category.Id))

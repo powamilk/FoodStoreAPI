@@ -23,6 +23,8 @@ namespace FoodStoreWinform
             {
                 BaseAddress = new Uri("https://localhost:7077")
             };
+
+            TempOrderItem = orderItem;
             if (orderItem != null)
             {
                 cb_productid.SelectedValue = orderItem.ProductId;
@@ -33,6 +35,10 @@ namespace FoodStoreWinform
         private async void Form2_Load(object sender, EventArgs e)
         {
             await LoadProductData();
+            if (TempOrderItem != null)
+            {
+                cb_productid.SelectedValue = TempOrderItem.ProductId;
+            }
         }
 
         private async Task LoadProductData()

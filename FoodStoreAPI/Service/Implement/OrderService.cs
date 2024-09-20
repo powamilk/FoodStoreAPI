@@ -55,9 +55,24 @@ namespace FoodStoreAPI.Service.Implement
                 .Include(o => o.OrderItems)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (existingOrder == null) throw new KeyNotFoundException("Order not found");
+            existingOrder.OrderDate = orderVM.OrderDate;
+            existingOrder.TotalAmount= orderVM.TotalAmount;
 
-            _mapper.Map(orderVM, existingOrder);
+            _context.OrderItems.RemoveRange(existingOrder.OrderItems);
+
+            foreach (var item in orderVM.OrderItems)
+            {
+                var product = await _context.Products.FindAsync(item.ProductId);
+                if (product == null)
+                    throw new KeyNotFoundException($"id ko tồn tại");
+
+                var newOrderItem = new OrderItem
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                };
+                existingOrder.OrderItems.Add(newOrderItem);
+            }    
             await _context.SaveChangesAsync();
         }
 

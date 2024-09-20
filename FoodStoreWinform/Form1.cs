@@ -6,21 +6,21 @@ namespace FoodStoreWinform
 {
     public partial class Form1 : Form
     {
-        private HttpClient _httpClient;
-        private List<OrderItem> _orderItems = new List<OrderItem>(); // Lưu danh sách các OrderItem đã thêm
+        private HttpClient _httpClient;   
+        private List<OrderItem> _orderItems = new List<OrderItem>();
+        private List<Order> _orders = new List<Order>();
         private float _totalAmount = 0;
         private int selectedRowIndex = -1;
+
         public Form1()
         {
-
-
             InitializeComponent();
 
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://localhost:7077")
             };
-
+            dgv_order.CellClick += dgv_order_CellClick;
             LoadFormOrder();
             LoadFormProduct();
             LoadFormCategory();
@@ -55,16 +55,36 @@ namespace FoodStoreWinform
 
         private async Task LoadOderFromData()
         {
-            var orders = await GetAllOrderAsync();
-            if (orders != null)
+            try
             {
+                var response = await _httpClient.GetAsync("api/orders");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    _orders = JsonConvert.DeserializeObject<List<Order>>(json);
 
-                dgv_order.DataSource = orders;
+                    dgv_order.DataSource = _orders;
+                }
+                else
+                {
+                    MessageBox.Show("Không thể tải dữ liệu đơn hàng.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Không có dữ liệu để hiển thị");
+                MessageBox.Show($"Đã xảy ra lỗi: {ex.Message}");
             }
+        }
+
+        private async Task<Product> GetProductByIdAsync(int productId)
+        {
+            var response = await _httpClient.GetAsync($"api/products/{productId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<Product>(json);
+            }
+            return null;
         }
 
         private async Task<List<Order>> GetAllOrderAsync()
@@ -83,8 +103,6 @@ namespace FoodStoreWinform
             {
                 throw ex;
             }
-
-
         }
 
         private async Task<bool> CreateOrderAsync(Order order)
@@ -137,38 +155,67 @@ namespace FoodStoreWinform
             }
         }
 
-        private void btn_suaorder_Click(object sender, EventArgs e)
+        private async void btn_suaorder_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >= 0 && selectedRowIndex < _orderItems.Count)
+            if (selectedRowIndex >= 0)
             {
-                var orderItem = _orderItems[selectedRowIndex];
-                using (Form2 form2 = new Form2(orderItem))
+                DataGridViewRow selectedRow = dgv_order.Rows[selectedRowIndex];
+                var selectedOrder = (Order)selectedRow.DataBoundItem;
+
+                if (selectedOrder != null)
                 {
-                    var result = form2.ShowDialog();
-                    if (result == DialogResult.OK)
+                    using (Form2 form2 = new Form2())
                     {
-                        _orderItems[selectedRowIndex] = form2.TempOrderItem;
+                        var result = form2.ShowDialog();
 
-                        _totalAmount = 0;
-                        foreach (var item in _orderItems)
+                        if (result == DialogResult.OK)
                         {
-                            _totalAmount += item.ProductPrice * item.Quantity;
+                            var updatedOrderItem = form2.TempOrderItem;
+                            var orderItemToEdit = selectedOrder.OrderItems.FirstOrDefault(i => i.ProductId == updatedOrderItem.ProductId);
+                            if (orderItemToEdit != null)
+                            {
+                                orderItemToEdit.Quantity = updatedOrderItem.Quantity;
+                                orderItemToEdit.ProductPrice = updatedOrderItem.ProductPrice;
+                            }
+                            else
+                            {
+                                selectedOrder.OrderItems.Add(updatedOrderItem);
+                            }
+                            bool updateResult = await UpdateOrderAsync(selectedOrder);
+
+                            if (updateResult)
+                            {
+                                MessageBox.Show("Cập nhật đơn hàng thành công!");
+                                await LoadOderFromData(); 
+                            }
+                            else
+                            {
+                                MessageBox.Show("Cập nhật đơn hàng thất bại.");
+                            }
                         }
-                        txt_totalamoun.Text = _totalAmount.ToString("N2");
-
-                        // Cập nhật lại DataGridView
-                        dgv_order.DataSource = null;
-                        dgv_order.DataSource = _orderItems;
-
-                        MessageBox.Show("Cập nhật sản phẩm thành công.");
                     }
                 }
             }
-            else
+        }
+
+        private async Task<bool> UpdateOrderAsync(Order order)
+        {
+            try
             {
-                MessageBox.Show("Vui lòng chọn sản phẩm cần sửa.");
+                var json = JsonConvert.SerializeObject(order);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage response = await _httpClient.PutAsync($"/api/orders/{order.Id}", content);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Đã xảy ra lỗi khi cập nhật đơn hàng: {ex.Message}");
+                return false;
             }
         }
+
 
         private void btn_xoaorder_Click(object sender, EventArgs e)
         {
@@ -271,9 +318,18 @@ namespace FoodStoreWinform
             {
                 selectedRowIndex = e.RowIndex;
                 DataGridViewRow selectedRow = dgv_order.Rows[selectedRowIndex];
+                var selectedOrder = (Order)selectedRow.DataBoundItem;
+                if (selectedOrder != null)
+                {
+                    txt_orderdate.Text = selectedOrder.OrderDate.ToString("yyyy-MM-dd");
+                    txt_totalamoun.Text = selectedOrder.TotalAmount.ToString("N2");
 
-                txt_orderdate.Text = Convert.ToDateTime(selectedRow.Cells["OrderDate"].Value).ToString("yyyy-MM-dd");
-                txt_totalamoun.Text = selectedRow.Cells["TotalAmount"].Value.ToString();
+                    _orderItems = selectedOrder.OrderItems.ToList();
+                }
+                else
+                {
+                    MessageBox.Show("Không tìm thấy đơn hàng.");
+                }
             }
         }
 

@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 
 namespace FoodStoreWinform.Models
 {
-    public class OrderItem
+    public class OrderWithItemsVM
     {
         public int OrderId { get; set; }
         public int ProductId { get; set; }
-        public int Quantity {  get; set; }
-        public string ProductName { get; set; } 
+        public DateTime OrderDate { get; set; }
+        public decimal TotalAmount { get; set; }
+        public string ProductName { get; set; }
         public float ProductPrice { get; set; }
+        public int Quantity { get; set; }
     }
 }
