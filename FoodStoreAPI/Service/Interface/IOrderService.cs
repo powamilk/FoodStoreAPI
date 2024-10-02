@@ -9,7 +9,7 @@ namespace FoodStoreAPI.Service.Interface
         Task<DisplayOrderVM?> GetOrderByIdAsync(int id);
         Task<DisplayOrderVM> CreateOrderAsync(CreateOrderVM orderVM);
         Task UpdateOrderAsync(int id, EditOrderVM orderVM);
-        Task DeleteOrderAsync(int id);
+        Task<bool> DeleteOrderAsync(int id);
     }
 
 }

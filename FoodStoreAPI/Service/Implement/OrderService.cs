@@ -107,21 +107,21 @@ namespace FoodStoreAPI.Service.Implement
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteOrderAsync(int id)
+        public async Task<bool> DeleteOrderAsync(int id)
         {
             var order = await _context.Orders
-                .Include(o => o.OrderItems) 
+                .Include(o => o.OrderItems)
                 .FirstOrDefaultAsync(o => o.Id == id);
-
             if (order == null)
-                throw new KeyNotFoundException("Order not found");
-
+                return false;
             _context.OrderItems.RemoveRange(order.OrderItems);
 
             _context.Orders.Remove(order);
-
             await _context.SaveChangesAsync();
+
+            return true; 
         }
+
 
     }
 }

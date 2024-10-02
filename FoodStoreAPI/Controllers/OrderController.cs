@@ -60,8 +60,14 @@ namespace FoodStoreAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
-            await _orderService.DeleteOrderAsync(id);
+            var isDeleted = await _orderService.DeleteOrderAsync(id);
+            if (!isDeleted)
+            {
+                return NotFound(); 
+            }
+
             return NoContent();
         }
+
     }
 }
