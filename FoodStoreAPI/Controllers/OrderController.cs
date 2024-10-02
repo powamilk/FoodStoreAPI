@@ -1,5 +1,6 @@
 ﻿using FoodStoreAPI.Service.Interface;
 using FoodStoreAPI.ViewModel;
+using FoodStoreAPI.ViewModel.Order;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,7 +16,6 @@ namespace FoodStoreAPI.Controllers
         {
             _orderService = orderService;
         }
-
         [HttpGet]
         public async Task<IActionResult> GetAllOrders()
         {
@@ -27,24 +27,31 @@ namespace FoodStoreAPI.Controllers
         public async Task<IActionResult> GetOrderById(int id)
         {
             var order = await _orderService.GetOrderByIdAsync(id);
-            if (order == null)
-            {
-                return NotFound();
-            }
+            if (order == null) return NotFound();
             return Ok(order);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrder([FromBody] OrderVM order)
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderVM orderVM)
         {
-            var createdOrder = await _orderService.CreateOrderAsync(order);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var createdOrder = await _orderService.CreateOrderAsync(orderVM);
             return CreatedAtAction(nameof(GetOrderById), new { id = createdOrder.Id }, createdOrder);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderVM order)
+        public async Task<IActionResult> UpdateOrder(int id, [FromBody] EditOrderVM orderVM)
         {
-            await _orderService.UpdateOrderAsync(id, order);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _orderService.UpdateOrderAsync(id, orderVM);
             return NoContent();
         }
 
@@ -55,6 +62,4 @@ namespace FoodStoreAPI.Controllers
             return NoContent();
         }
     }
-
-
 }

@@ -35,7 +35,7 @@ namespace FoodStoreAPI.Controllers
         public async Task<IActionResult> CreateCategory([FromBody] CategoryVM category)
         {
             var createdCategory = await _categoryService.CreateCategoryAsync(category);
-            return CreatedAtAction(nameof(GetCategoryById), new { id = createdCategory.Id }, createdCategory);
+            return Ok(category);
         }
 
         [HttpPut("{id}")]

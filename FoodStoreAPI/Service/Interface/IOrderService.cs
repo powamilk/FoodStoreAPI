@@ -1,13 +1,14 @@
 ﻿using FoodStoreAPI.ViewModel;
+using FoodStoreAPI.ViewModel.Order;
 
 namespace FoodStoreAPI.Service.Interface
 {
     public interface IOrderService
     {
-        Task<IEnumerable<OrderVM>> GetAllOrdersAsync(); 
-        Task<OrderVM?> GetOrderByIdAsync(int id);
-        Task<OrderVM> CreateOrderAsync(OrderVM order);
-        Task UpdateOrderAsync(int id, OrderVM order);
+        Task<IEnumerable<DisplayOrderVM>> GetAllOrdersAsync();
+        Task<DisplayOrderVM?> GetOrderByIdAsync(int id);
+        Task<DisplayOrderVM> CreateOrderAsync(CreateOrderVM orderVM);
+        Task UpdateOrderAsync(int id, EditOrderVM orderVM);
         Task DeleteOrderAsync(int id);
     }
 
