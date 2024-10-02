@@ -46,13 +46,15 @@ namespace FoodStoreAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] EditOrderVM orderVM)
         {
-            if (!ModelState.IsValid)
+            var order = await _orderService.GetOrderByIdAsync(id);
+
+            if (order == null)
             {
-                return BadRequest(ModelState);
+                return NotFound(); 
             }
 
             await _orderService.UpdateOrderAsync(id, orderVM);
-            return NoContent();
+            return NoContent(); 
         }
 
         [HttpDelete("{id}")]

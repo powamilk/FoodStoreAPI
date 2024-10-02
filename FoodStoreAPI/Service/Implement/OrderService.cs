@@ -79,10 +79,10 @@ namespace FoodStoreAPI.Service.Implement
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (existingOrder == null)
-                throw new KeyNotFoundException("Order not found");
+                return;
 
             existingOrder.CustomerId = orderVM.CustomerId;
-            existingOrder.OrderDate = DateTime.UtcNow; 
+            existingOrder.OrderDate = DateTime.UtcNow;
 
             _context.OrderItems.RemoveRange(existingOrder.OrderItems);
             existingOrder.OrderItems.Clear();
@@ -104,10 +104,8 @@ namespace FoodStoreAPI.Service.Implement
             }
             existingOrder.TotalAmount = existingOrder.OrderItems
                 .Sum(item => item.Product?.Price * item.Quantity ?? 0);
-
             await _context.SaveChangesAsync();
         }
-
 
         public async Task DeleteOrderAsync(int id)
         {
